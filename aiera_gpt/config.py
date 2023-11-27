@@ -3,13 +3,6 @@ from typing import NewType, List
 
 from pydantic import BaseSettings
 
-from aiera.shared_services.db import (
-    AieraDBConfig,
-    AieraReadDBConfig,
-)
-
-
-from aiera.shared_services.injection import context, inject
 
 
 class OpenAISettings(BaseSettings):
@@ -37,14 +30,8 @@ class AieraSettings(BaseSettings):
         env_prefix = "AIERA_"
 
 
-@inject
-def provide_read_db_config(settings: DatabaseSettings) -> AieraReadDBConfig:
-    return AieraDBConfig(
-        db_uri=settings.read_url,
-        charset="utf8mb4",
-    )
+openai_settings = OpenAISettings()
 
+database_settings = DatabaseSettings()
 
-
-def initialize_context():
-    context.register_provider(provide_read_db_config, singleton=True)
+aiera_settings = AieraSettings()

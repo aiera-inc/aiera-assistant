@@ -6,16 +6,14 @@ import tiktoken
 
 
 from openai.types.beta.threads import MessageContentText, ThreadMessage
-from aiera.shared_services.injection import inject
 from aiera.shared_services.db import AieraReadDatabase
-from aiera_gpt.config import AieraSettings, OpenAISettings, AieraReadDBConfig
+from aiera_gpt.config import AieraSettings, OpenAISettings, aiera_settings
 import logging
 
 logger = logging.getLogger("aiera_gpt.assistant")
 logger.addHandler(logging.StreamHandler())
 logger.setLevel("DEBUG")
 
-@inject
 def verify_user(settings: AieraSettings):
     if not settings.api_key:
         logger.debug("User does not have API key defined.")
@@ -66,29 +64,9 @@ class Tokenizer():
         return len(tokens)
 
 
-class AieraGPTThreadContext:
-     
-    def __init__(self, openai_settings: OpenAISettings):
-        self.client = OpenAI(
-            organization = openai_settings.org_id,
-            api_key = openai_settings.api_token
-        )
-
-        self.thread = None
-
-    def __enter__(self):
-        logger.debug("Creating thread.")
-        self.thread = self.client.beta.threads.create()
-        return self.thread
-
-    def __exit__(self, exc_type, exc_value, exc_tb):
-        self.client.beta.threads.delete(self.thread.id)
-
-
 class AieraGPTAssistant:
 
-    @inject
-    def __init__(self, settings: OpenAISettings, db_config: AieraReadDBConfig):
+    def __init__(self, settings: OpenAISettings, db_config, aiera_settings):
         self.client = OpenAI(
             organization = settings.org_id,
             api_key = settings.api_token
@@ -100,7 +78,7 @@ class AieraGPTAssistant:
         self.assistant_id = settings.assistant_id
         self.assistant = self.client.beta.assistants.retrieve(self.assistant_id)
         self.thread = self.client.beta.threads.create()
-        self.is_verified = verify_user()
+        self.is_verified = verify_user(aiera_settings)
         self.model_name = self.assistant.model
         self.tokenizer = Tokenizer(self.assistant.model)
         self.total_token_count = 0
@@ -112,7 +90,6 @@ class AieraGPTAssistant:
         return self.tokenizer.get_token_count(messages)
 
 
-    @inject
     def get_possible_events(self, company: str , quarter= None, year = None):
         # THIS MUST BE IMPLEMENTED IN aiera_api
 
@@ -138,12 +115,7 @@ class AieraGPTAssistant:
         events = self.db.select_all(sql)
         return events
     
-
-    def _event_get_transcript(self):
-        ...
-
     
-    @inject
     def get_event_transcript(self, company: str, quarter= None, year = None):
 
         possible_events = self.get_possible_events(company, quarter=quarter, year=year)

@@ -1,9 +1,16 @@
-import openai
 import streamlit as st
 from streamlit_chat import message
+from aiera_gpt.config import openai_settings, database_settings, aiera_settings
+
+import openai
+
 
 from aiera.shared_services.injection import inject
 from aiera_gpt.assistant import AieraGPTAssistant
+
+from aiera.shared_services.db import (
+    AieraDBConfig,
+)
 
 import logging
 
@@ -11,6 +18,12 @@ assistant_logger = logging.getLogger("aiera_gpt.assistant")
 
 @inject
 def main():
+
+    db_config = AieraDBConfig(
+                db_uri=database_settings.read_url,
+                charset="utf8mb4",
+            )
+
     # Setting page title and header
     st.set_page_config(page_title="Aiera", page_icon=":robot_face:")
     st.markdown("<h1 style='text-align: center;'>Aiera Assistant</h1>", unsafe_allow_html=True)
@@ -19,7 +32,12 @@ def main():
     #introduction = assistant.introduce_self()
 
     if 'assistant' not in st.session_state:
-        st.session_state['assistant'] = AieraGPTAssistant()
+        st.session_state['assistant'] = AieraGPTAssistant(
+            settings = openai_settings,
+            db_config = db_config,
+            aiera_settings=aiera_settings
+
+        )
 
     # Initialise session state variables
     if 'generated' not in st.session_state:
@@ -54,14 +72,18 @@ def main():
         st.session_state['past'] = []
         st.session_state['messages'] = []
         st.session_state['number_tokens'] = []
-        st.session_state['model_name'] = [st.session_sate['assistant'].model_name]
+        st.session_state['model_name'] = [st.session_state['assistant'].model_name]
         st.session_state['cost'] = []
         #st.session_state['total_cost'] = 0.0
         st.session_state['total_tokens'] = [0]
         counter_placeholder.write(f"Total cost of this conversation: ${st.session_state['total_cost']:.5f}")
 
         st.session_state['assistant'].close_chat()
-        st.session_state['assistant'] = AieraGPTAssistant()
+        st.session_state['assistant'] = AieraGPTAssistant(
+            settings = openai_settings,
+            db_config = db_config,
+            aiera_settings=aiera_settings
+        )
 
         #st.session_state['assistant'].introduce_self()
 
@@ -103,8 +125,8 @@ def main():
 
                 else:
                     message(mess["content"], key=str(i))
-                    st.write(
-                    f"Model used: {st.session_state['model_name'][i//2+1]}; Number of tokens: {st.session_state['total_tokens'][i//2+1]};")
+                    #st.write(
+                    #f"Model used: {st.session_state['model_name'][i//2+1]}; Number of tokens: {st.session_state['total_tokens'][i//2+1]};")
 
               #  st.write(
               #      f"Model used: {st.session_state['model_name'][i]}; Number of tokens: {st.session_state['total_tokens'][i]};")
