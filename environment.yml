@@ -1,0 +1,14 @@
+# conda env create -f environment.yml
+name: aiera-gpt
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - pydantic
+  - pandas
+  - jupyterlab
+  - streamlit
+  - versioneer
+  - pip:
+    - streamlit-chat
+    - openai
