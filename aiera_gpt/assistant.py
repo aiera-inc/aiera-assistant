@@ -1,18 +1,18 @@
 from openai import OpenAI
 import time
+import os
+from typing import List
 import json
 import openai
 import tiktoken
 
 
 from openai.types.beta.threads import MessageContentText, ThreadMessage
-from aiera.shared_services.db import AieraReadDatabase
-from aiera_gpt.config import AieraSettings, OpenAISettings, aiera_settings
+from aiera_gpt.config import AieraSettings, OpenAISettings
 import logging
+import requests
 
 logger = logging.getLogger("aiera_gpt.assistant")
-logger.addHandler(logging.StreamHandler())
-logger.setLevel("DEBUG")
 
 def verify_user(settings: AieraSettings):
     if not settings.api_key:
@@ -66,25 +66,29 @@ class Tokenizer():
 
 class AieraGPTAssistant:
 
-    def __init__(self, settings: OpenAISettings, db_config, aiera_settings):
+    def __init__(self, openai_settings: OpenAISettings, aiera_settings):
         self.client = OpenAI(
-            organization = settings.org_id,
-            api_key = settings.api_token
+            organization = openai_settings.org_id,
+            api_key = openai_settings.api_token
         )
 
-        openai.organization = settings.org_id
-        openai.api_key = settings.api_token
+        #openai.organization = openai_settings.org_id
+        #openai.api_key = openai_settings.api_token
 
-        self.assistant_id = settings.assistant_id
+        self.assistant_id = openai_settings.assistant_id
         self.assistant = self.client.beta.assistants.retrieve(self.assistant_id)
         self.thread = self.client.beta.threads.create()
         self.is_verified = verify_user(aiera_settings)
         self.model_name = self.assistant.model
         self.tokenizer = Tokenizer(self.assistant.model)
         self.total_token_count = 0
+        self.persist_files = openai_settings.persist_files
+        self.aiera_settings = aiera_settings
+
+        self.file_ids = []
 
         # remove once using api
-        self.db = AieraReadDatabase(db_config)
+        #self.db = AieraReadDatabase(db_config)
 
     def get_token_count(self, messages: list):
         return self.tokenizer.get_token_count(messages)
@@ -103,10 +107,10 @@ class AieraGPTAssistant:
 
 
         sql = f"""
-        SELECT sac.scheduled_audio_call_id, e.equity_id, sac.fiscal_quarter, sac.fiscal_year, sac.transcript_current_version FROM equities e
+        SELECT sac.scheduled_audio_call_id, e.equity_id, sac.fiscal_quarter, sac.fiscal_year, sac.transcript_current_version, e.search_name FROM equities e
         JOIN scheduled_audio_calls_nc sac 
         ON e.equity_id = sac.equity_id 
-        WHERE e.common_name LIKE '{company}%%'
+        WHERE e.search_name LIKE '{company}%%'
         AND sac.call_type = 'earnings'
         {quarter_sql}
         {year_sql};
@@ -115,32 +119,68 @@ class AieraGPTAssistant:
         events = self.db.select_all(sql)
         return events
     
-    
-    def get_event_transcript(self, company: str, quarter= None, year = None):
+    def find_events(self):
+        matches = requests.get(f"{self.aiera_settings.base_url}/matches?size=10", 
+                    headers={"X-API-Key": self.aiera_settings.api_key})
 
-        possible_events = self.get_possible_events(company, quarter=quarter, year=year)
-        event = possible_events[0]
+        event_type = "earnings"
+        isin = isin
+        with_transcripts = True
 
-        sql = """SELECT sace.event_id, COALESCE(sace.transcript_corrected, sace.transcript) AS transcript,
-                        COALESCE(p.parent_id, p.person_id) AS person_id, p.name as person_name,
-                        sace.transcript_section
-                    FROM scheduled_audio_call_events_nc sace
-                        LEFT JOIN transcript_speakers ts ON ts.speaker_id = sace.transcript_speaker_id
-                        LEFT JOIN persons p ON ts.person_id = p.person_id
-                    WHERE sace.scheduled_audio_call_id = %s
-                        AND (sace.status IS NULL OR sace.status = 'active')
-                        AND sace.event_type IN ('transcript', 'official_transcript')
-                        AND sace.transcript_version = %s
-                    ORDER BY start_ms ASC"""
+
+        # event will return     "fiscal_year": 2022,
+  #  "fiscal_quarter": 3
+
+    def get_event_transcript(self, equity_id: int, quarter: int = None, year: int = None):
+        params_string = f"size=10&event_type=earnings&with_transcripts=1&equity_id={equity_id}"
+        if quarter is not None:
+            params_string += f"&fiscal_quarter={quarter}"
         
-        transcript_segments = self.db.select_all(sql, event.scheduled_audio_call_id, event.transcript_current_version)
+        if year is not None:
+            params_string += f"&fiscal_year={year}"
 
-        text = ""
-        for segment in transcript_segments:
-            chunks = segment.transcript.split("\n")
-            text += "\n".join([chunk.strip(" \n") for chunk in chunks])
 
-        return text
+        matches = requests.get(f"{self.aiera_settings.base_url}?{params_string}", 
+                               headers={"X-API-Key": self.aiera_settings.api_key})
+
+        print(matches)
+
+        breakpoint()
+
+
+        #transcript = f"{event.search_name} Q{event.fiscal_quarter} Q{event.fiscal_year}\n"
+        #for segment in transcript_segments:
+        #    chunks = segment.transcript.split("\n")
+        #    if segment.person_name:
+        #        transcript += f"{segment.person_name}: "
+        #    transcript += "\n".join([chunk.strip(" \n") for chunk in chunks])
+        #    transcript += "\n"
+
+        #self.upload_transcript_file(event.search_name, event.fiscal_quarter, event.fiscal_year, transcript)
+
+
+        return None
+
+
+    
+    def upload_transcript_file(self, company, quarter, year, transcript):
+        # create temporary local file
+        filename = f"{company.replace(' ', '')}_Q{quarter}_{year}.txt"
+        with open(filename, "w") as f:
+            f.write(transcript)
+
+        #upload a file with an assistants purpose
+        try:
+            file = self.client.files.create(
+                file = open(filename, "r"),
+                purpose = "assistants"
+            )
+            self.file_ids.append(file.id)
+        except Exception as e:
+            logger.error(str(e))
+
+        # remove local file 
+        os.remove(filename)
 
 
     def introduce_self_unverified(self):
@@ -185,15 +225,17 @@ class AieraGPTAssistant:
             thread_id = self.thread.id,
             role = "system",
             content = message_content,
+           # file_ids = []
         )
         return [{"role": "assistant", "content": message_content}]
 
     def submit_message(self, message_content: str):
-        logger.debug("Adding message from user to the message thread.")
+        logger.debug("Adding message from user to the message thread. Will reference the file_ids: %s", ", ".join(self.file_ids))
         self.client.beta.threads.messages.create(
             thread_id = self.thread.id,
             role = "user",
             content = message_content,
+            file_ids = self.file_ids
         )
         
 
@@ -209,7 +251,10 @@ class AieraGPTAssistant:
         self.process_messages()
 
 
-    def process_messages(self):
+    def process_messages(self) -> List[dict]:
+        """Main workflow for processing messages with openai endpoints.
+        
+        """
         messages = self.client.beta.threads.messages.list(thread_id=self.thread.id)
         logger.debug("Current messages in thread:\n%s", json.dumps([{"role": mess.role, "content": mess.content[0].text.value} for mess in messages]))
 
@@ -217,7 +262,7 @@ class AieraGPTAssistant:
         logger.debug("Creating a remote run using the thread and assistant.")
         run = self.client.beta.threads.runs.create(
             thread_id = self.thread.id,
-            assistant_id = self.assistant.id,
+            assistant_id = self.assistant.id
         )
 
         run = self._wait_for_run_event(run)
@@ -238,7 +283,7 @@ class AieraGPTAssistant:
 
                 if function_name == "get_event_transcript":
                     output = self.get_event_transcript(
-                        function_arg["company"],
+                        function_arg["equity_id"],
                         quarter = function_arg["quarter"],
                         year = function_arg["year"]
                     )
@@ -312,4 +357,16 @@ class AieraGPTAssistant:
                 new_messages.append(message)
 
         return new_messages
-            
+    
+    def __del__(self):
+        if self.file_ids:
+            if self.persist_files:
+                logger.info("Files are being persisted.")
+
+            if not self.persist_files:
+                logger.info("Configured to remove files uploaded to openai. Deleting...")
+                for file_id in self.file_ids:
+                    logger.debug("Removing file %s...", file_id)
+                    res = self.client.files.delete(
+                        file_id = file_id
+                    )

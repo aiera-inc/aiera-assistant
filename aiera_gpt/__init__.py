@@ -1,11 +1,13 @@
-from aiera.shared_services.env import Environment, Service
-from aiera.shared_services.injection import context
 import os
+from pathlib import Path
 
-############################################################
-# THIS ENVIRONMENT SETUP MUST BE BEFORE OTHER IMPORTS
-############################################################
+import logging
+from aiera_gpt.config import LoggingSettings
 
-context.bind_to_instance(Environment, os.environ.get("ENVIRONMENT", "local"))
-context.bind_to_instance(Service, "aiera-gpt")
+ROOT_DIR = str(Path(__file__).parent.parent.absolute())
 
+logging_settings = LoggingSettings()
+
+logger = logging.getLogger("aiera_gpt")
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging_settings.level)
