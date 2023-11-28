@@ -1,40 +1,32 @@
 import streamlit as st
 from streamlit_chat import message
-from aiera_gpt.config import openai_settings, database_settings, aiera_settings
+from aiera_gpt.config import openai_settings, aiera_settings
 
 import openai
 
 
-from aiera.shared_services.injection import inject
 from aiera_gpt.assistant import AieraGPTAssistant
-
-from aiera.shared_services.db import (
-    AieraDBConfig,
-)
+from aiera_gpt.__init__ import ROOT_DIR
 
 import logging
 
 assistant_logger = logging.getLogger("aiera_gpt.assistant")
 
-@inject
+
 def main():
 
-    db_config = AieraDBConfig(
-                db_uri=database_settings.read_url,
-                charset="utf8mb4",
-            )
+    #db_config = AieraDBConfig(
+    #            db_uri=database_settings.read_url,
+    #            charset="utf8mb4",
+    #        )
 
     # Setting page title and header
-    st.set_page_config(page_title="Aiera", page_icon=":robot_face:")
+    st.set_page_config(page_title="Aiera", page_icon=f"{ROOT_DIR}/aiera_gpt/assets/logo.png")
     st.markdown("<h1 style='text-align: center;'>Aiera Assistant</h1>", unsafe_allow_html=True)
-
-   # assistant = AieraGPTAssistant()
-    #introduction = assistant.introduce_self()
 
     if 'assistant' not in st.session_state:
         st.session_state['assistant'] = AieraGPTAssistant(
-            settings = openai_settings,
-            db_config = db_config,
+            openai_settings = openai_settings,
             aiera_settings=aiera_settings
 
         )
@@ -60,7 +52,7 @@ def main():
 
     # Sidebar - let user choose model, show total cost of current conversation, and let user clear the current conversation
     st.sidebar.title("Sidebar")
-    model_name = st.sidebar.radio("Choose a model:", ("GPT-3.5", "GPT-4"))
+    #model_name = st.sidebar.radio("Choose a model:", ("GPT-3.5", "GPT-4"))
     counter_placeholder = st.sidebar.empty()
     counter_placeholder.write(f"Total cost of this conversation: ${st.session_state['total_cost']:.5f}")
     clear_button = st.sidebar.button("Clear Conversation", key="clear")
@@ -85,7 +77,6 @@ def main():
             aiera_settings=aiera_settings
         )
 
-        #st.session_state['assistant'].introduce_self()
 
     # container for chat history
     response_container = st.container()
@@ -98,10 +89,9 @@ def main():
             submit_button = st.form_submit_button(label='Send')
 
         if submit_button and user_input: #...
+            st.session_state['generated'].append({"role": "user", "content": user_input})
             st.session_state['assistant'].submit_message(user_input)
             messages = [mess for mess in st.session_state['assistant'].process_messages()]
-
-            #st.session_state['past'] = messages[:-1]
             st.session_state['generated'] = messages
             st.session_state['total_tokens'].append(st.session_state['assistant'].total_token_count)
             st.session_state['model_name'].append(st.session_state['assistant'].model_name)
