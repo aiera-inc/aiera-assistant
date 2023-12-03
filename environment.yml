@@ -13,6 +13,8 @@ dependencies:
   - mysqlclient
   - tiktoken
   - pymysql
+  - sqlalchemy
+  - pysqlite3
   - pip:
     - streamlit-chat
     - openai
