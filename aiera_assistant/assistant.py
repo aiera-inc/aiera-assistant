@@ -1,19 +1,15 @@
 from openai import OpenAI
 import time
-import os
 import re
 from typing import List
 import json
-import openai
 import tiktoken
 import sqlite3
-from sqlalchemy.pool import SingletonThreadPool
-
 
 from openai.types.beta.threads import ThreadMessage
-from aiera_gpt.config import AieraSettings, OpenAISettings, DBSettings
 from openai.types.beta.threads.message_content_text import TextAnnotationFileCitation
-from aiera_gpt.__init__ import ROOT_DIR
+from aiera_gpt.config import AieraSettings, OpenAISettings
+from aiera_assistant.__init__ import ROOT_DIR
 import logging
 import requests
 
@@ -128,10 +124,10 @@ class Tokenizer():
         return len(tokens)
 
 
-class AieraGPTAssistant:
+class AieraAssistant:
 
     """
-    A class representing an Aiera GPT Assistant.
+    A class representing an Aiera Assistant.
 
     Attributes:
         openai_settings (OpenAISettings): The settings for the OpenAI API.
