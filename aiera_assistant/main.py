@@ -1,12 +1,8 @@
 import streamlit as st
 from streamlit_chat import message
-from aiera_gpt.config import openai_settings, aiera_settings, db_settings
-
-import openai
-
-
-from aiera_gpt.assistant import AieraGPTAssistant
-from aiera_gpt.__init__ import ROOT_DIR
+from aiera_assistant.config import openai_settings, aiera_settings, db_settings
+from aiera_assistant.assistant import AieraAssistant
+from aiera_assistant.__init__ import ROOT_DIR
 
 import logging
 
@@ -20,7 +16,7 @@ def main():
     st.markdown("<h1 style='text-align: center;'>Aiera Assistant</h1>", unsafe_allow_html=True)
 
     if 'assistant' not in st.session_state:
-        st.session_state['assistant'] = AieraGPTAssistant(
+        st.session_state['assistant'] = AieraAssistant(
             openai_settings = openai_settings,
             aiera_settings=aiera_settings,
             db_settings=db_settings
