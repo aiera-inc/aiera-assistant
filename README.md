@@ -21,7 +21,7 @@ Use [conda](https://docs.conda.io/en/latest/) to create a virtual environment an
 
 ```bash
 conda env create -f environment.yml
-conda activate aiera-gpt
+conda activate aiera-assistant
 ```
 
 ### 2. Install the assistant
