@@ -46,10 +46,10 @@ The
 ### 4. Run the application using streamlit
 
 ```bash
-streamlit run aiera_gpt/__main__.py
+streamlit run aiera_gpt/main.py
 ```
 
 
 ## Known issues
 
-1. Citation generation is still a little spotty.
+1. Citation generation is still a little spotty. Appears to be an issue after a couple of messages.
