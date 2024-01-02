@@ -15,7 +15,7 @@ class LoggingSettings(BaseSettings):
     Configurations:
         env_prefix (str): The prefix for environment variables used to configure the logging settings.
     """    
-    level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+    level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
 
     class Config:
         env_prefix = "LOGGING_"
