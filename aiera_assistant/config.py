@@ -30,7 +30,7 @@ class OpenAISettings(BaseSettings):
         persist_files (bool, optional): Whether to persist files. Defaults to True.
         try_allowance (int, optional): The number of allowed tries. Defaults to 3.
         try_pause (int, optional): The pause duration between tries. Defaults to 15.
-        assistant_id (str, optional): The ID of the assistant. Defaults to 'asst_7GJLGrw0786VJ01rSiH1CVFv'.
+        assistant_id (str, optional): The ID of the assistant.
 
     Configurations:
         env_prefix (str): The prefix for environment variables.
@@ -40,7 +40,7 @@ class OpenAISettings(BaseSettings):
     persist_files: bool = True
     try_allowance: int = 3
     try_pause: int = 15
-    assistant_id: str = "asst_7GJLGrw0786VJ01rSiH1CVFv"
+    assistant_id: str 
 
     class Config:
         env_prefix = "OPENAI_"
