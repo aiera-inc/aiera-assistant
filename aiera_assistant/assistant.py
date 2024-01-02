@@ -4,16 +4,15 @@ import re
 from typing import List
 import json
 import tiktoken
-import sqlite3
 
 from openai.types.beta.threads import ThreadMessage
 from openai.types.beta.threads.message_content_text import TextAnnotationFileCitation
-from aiera_gpt.config import AieraSettings, OpenAISettings
+from aiera_assistant.config import AieraSettings, OpenAISettings
 from aiera_assistant.__init__ import ROOT_DIR
 import logging
 import requests
 
-logger = logging.getLogger("aiera_gpt.assistant")
+logger = logging.getLogger("aiera_assistant.assistant")
 
 def verify_user(settings: AieraSettings):
     """
@@ -264,121 +263,70 @@ class AieraAssistant:
 
         transcript = transcript.replace("<unk>", "")
         return transcript
-    
-    def find_company_permid(self, company):
-        """
-        Lookup the permid for the company using the provided db file.
-        """
-        con =  sqlite3.connect(f"{ROOT_DIR}/aiera_gpt/db/companies.db")
-        cur = con.cursor()
 
-        # clean company name
-        company = company.replace("   ", " ")
-        company = company.replace("  ", " ")
-
-        res = cur.execute(f"SELECT common_name, perm_id FROM companies WHERE LOWER(common_name) LIKE '{company.lower()}%';")
-        match = res.fetchone()
-
-        con.close()
-
-        if match is None:
-            logger.debug(f"No company match found for {company}")
-            return None
         
-        else:
-            logger.debug("Match found for %s - %s with permid %s", company, match[0], match[1])
-            return match[1]
 
+    def get_events(self, modified_since: str = None,
+                bloomberg_ticker: str = None, 
+                event_type: str = None,
+                start_date: str = None, 
+                end_date: str=None, 
+                isin: str = None,
+                permid: str = None
+                ):
+        
+        logger.debug(f"Getting events: {modified_since}, {bloomberg_ticker}, {event_type}, {start_date}, {end_date}, {isin}, {permid}")
+        
+        param_strings = []
+        
+        for param, item in {"modified_since": modified_since, 
+                            "bloomberg_ticker": bloomberg_ticker, 
+                            "event_type": event_type,
+                            "start_date": start_date,
+                            "end_date": end_date,
+                            "isin": isin,
+                            "permid": permid
+                            }.items():
+            if item is not None:
+                param_strings.append(f"{param}={item}")
 
+        param_string = "&".join(param_strings)
+        url = f"{self.aiera_settings.base_url}/events?{param_string}"
 
-    def get_event_transcripts(self, company: str, quarter: int = None, year: int=None, start_date: str = None):
-        """
-        Get event transcripts using the provided information.
-        """
-
-        if not start_date:
-            start_date = f"{year}-01-01"
-
-
-        # need to compare start date to the quarter
-        permid = self.find_company_permid(company)
-        if not permid:
-
-            logger.error(f"Unable to find a company match for {company}.")
-
-        params_string = f"event_type=earnings&with_transcripts=1&permid={permid}&start_date={start_date}"
-
-        matches = requests.get(f"{self.aiera_settings.base_url}/events?{params_string}", 
+        matches = requests.get(url, 
                                headers={"X-API-Key": self.aiera_settings.api_key})
         
+        content = json.dumps(matches.json())
 
-        found_event_transcripts = []
-        matched_events = []
-        if matches.status_code == 200:
-            event_matches = matches.json()
-
-            # now we search for matches in the window
-            for event in event_matches:
-
-                matched = True
-
-                if quarter and quarter != event["fiscal_quarter"]:
-                    matched = False
-
-                if year and year != event["fiscal_year"]:
-                    matched = False
-
-                if event["primary_equity"] and matched:
-                    matched_events.append(event)
-
-            for match in matched_events:
-                transcript = self._get_transcript(match["event_id"])
-
-                # give the item a title for reference
-                transcript = f"#{match['title']}\n##Event Date: {match['event_date'].split('T')[0]}\n##Fiscal Quarter: {match['fiscal_quarter']}\n##Fiscal Year: {match['fiscal_year']}\n##Transcript:\n{transcript}"
-
-                file_id = self.upload_transcript_file(match['title'], transcript)
-                found_event_transcripts.append(file_id)
-
-        else:
-
-            logger.error("Unable to get events for %s, quarter %s, year %s. Returned %s with reason: %s", company, quarter, year, matches.status_code, matches.reason)
-
-        return found_event_transcripts
-
-
+        return content
     
-    def upload_event_transcript(self, company: str, quarter: int = None, year: int = None) -> list:
-        """
-        Args:
-            None
-        """
-        logger.debug("Getting event transcript for %s, %s, %s", company, quarter, year)
-        found_event_transcripts = self.get_event_transcripts(company, quarter, year)
+    def upload_event_transcripts(self, event_ids: list):
 
-        return found_event_transcripts
-    
+        logger.debug("Uploading event transcripts: %s", json.dumps(event_ids))
+        
+        file_ids = []
+        for event_id in event_ids:
 
-    def load_historical_transcripts(self, company: str, start_date: str = "2022-01-01") -> list:
-        """
-        Load historical transcripts for a given company.
+            event = requests.get(f"{self.aiera_settings.base_url}/events/{event_id}?transcripts=true", 
+                               headers={"X-API-Key": self.aiera_settings.api_key})
+            
+            event_data = event.json()
 
-        Args:
-            self: The object containing the method.
-            company (str): The name of the company.
-            start_date (str, optional): The start date for the historical data in the format 'yyyy-mm-dd'. Defaults to '2022-01-01'.
+            transcripts = [event_item["transcript"] for event_item in event_data["transcript"]]
+            # remove transcripts items
+            del event_data["transcripts"]
 
-        Returns:
-            List: A list of file ids uploaded
-        """        
-        found_event_transcripts = self.get_event_transcripts(company, start_date=start_date)
+            event_data["transcript"] = "\n".join(transcripts)
 
-        logger.debug("Completed loading historical transcripts.")
+            filename = f'{event_id}.json'
 
-        return found_event_transcripts
+            file_id = self.upload_transcript_file(filename, json.dumps(event_data))
+            file_ids.append(file_id)
+
+        return file_ids
     
     
-    def upload_transcript_file(self, title, transcript, sleep=5):
+    def upload_transcript_file(self, filename, transcript, sleep=5):
         """
         Upload a transcript file to the storage system.
 
@@ -394,7 +342,6 @@ class AieraAssistant:
         """        
 
         # create temporary local file
-        filename = f"{title.replace(' ', '_').lower()}.md"
         with open(filename, "w") as f:
             f.write(transcript)
 
@@ -414,7 +361,7 @@ class AieraAssistant:
             time.sleep(sleep)
 
         # remove local file 
-        #os.remove(filename)
+        os.remove(filename)
         return file.id
 
 
@@ -475,11 +422,10 @@ class AieraAssistant:
             content = message_content,
             file_ids = self._current_file_ids
         )
-        
 
+    
     def process_messages(self) -> List[dict]:
-        """ WITH cancel
-        Main workflow for processing messages with OpenAI endpoints.
+        """ Main workflow for processing messages with OpenAI endpoints.
         """
         messages = list(self.client.beta.threads.messages.list(thread_id=self.thread.id))
         logger.debug("Current messages in thread:\n%s", json.dumps([{"role": mess.role, "content": mess.content[0].text.value} for mess in messages]))
@@ -493,11 +439,13 @@ class AieraAssistant:
 
         run = self._wait_for_run_event(run)
 
-        if run.status == 'requires_action':
+        while run.status == 'requires_action':
             logger.debug("Action required...")
             tools_to_call = run.required_action.submit_tool_outputs.tool_calls
 
+
             for each_tool in tools_to_call:
+                tool_call_id = each_tool.id
                 function_name = each_tool.function.name
                 function_arg = each_tool.function.arguments
                 if function_arg is not None:
@@ -505,37 +453,28 @@ class AieraAssistant:
 
                 logger.debug("Will attempt to run %s with args %s", function_name, json.dumps(function_arg))
 
-                if function_name == "upload_event_transcript":
-                    file_ids = self.upload_event_transcript(
-                        function_arg["company"],
-                        quarter = function_arg["quarter"],
-                        year = function_arg["year"]
+                if function_name == "get_events":
+                    found_events = self.get_events(
+                        **function_arg
                     )
-                    self._current_file_ids = file_ids
 
-                    # At present, file submission is not supported in the 
-
-                    self.client.beta.threads.runs.cancel(
+                    # Submit events
+                    run = self.client.beta.threads.runs.submit_tool_outputs(
                         thread_id = self.thread.id,
-                        run_id = run.id
+                        run_id = run.id,
+                        tool_outputs = [{"tool_call_id": tool_call_id, "output": found_events}]
                     )
 
-                    # Attempt update of files
-                    self.client.beta.threads.messages.create(
-                        thread_id = self.thread.id,
-                        role = "user",
-                        content = "",
-                        file_ids = file_ids
+                    run = self._wait_for_run_event(run)
+
+                elif function_name == "upload_event_transcripts":
+                    file_ids = self.upload_event_transcripts(
+                        **function_arg
                     )
 
-                elif function_name == "load_historical_transcripts":
-                    file_ids = self.load_historical_transcripts(
-                        function_arg["company"],
-                        function_arg["start_date"]
-                    )
+                    self._current_file_ids =  file_ids
 
-                    self._current_file_ids = file_ids
-
+                    # uploads require cancel because of file handling
                     self.client.beta.threads.runs.cancel(
                         thread_id = self.thread.id,
                         run_id = run.id
@@ -550,7 +489,7 @@ class AieraAssistant:
                     )
                 
             
-            return self.process_messages()
+                    return self.process_messages()
 
         if run.status == "completed":
             logger.debug("Completed run.")
@@ -568,7 +507,7 @@ class AieraAssistant:
         else:
             logger.error("Something went wrong. Run status : %s", run.status)
 
-
+        
     def _wait_for_run_event(self, run):
         """
         Waits for the completion of an assistant run and returns the final run status.

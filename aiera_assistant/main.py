@@ -12,7 +12,7 @@ assistant_logger = logging.getLogger("aiera_gpt.assistant")
 def main():
 
     # Setting page title and header
-    st.set_page_config(page_title="Aiera", page_icon=f"{ROOT_DIR}/aiera_gpt/assets/favicon.ico")
+    st.set_page_config(page_title="Aiera", page_icon=f"{ROOT_DIR}/aiera_assistant/assets/favicon.ico")
     st.markdown("<h1 style='text-align: center;'>Aiera Assistant</h1>", unsafe_allow_html=True)
 
     if 'assistant' not in st.session_state:
@@ -49,7 +49,7 @@ def main():
 
         st.session_state['assistant'].close_chat()
         del st.session_state['assistant']
-        st.session_state['assistant'] = AieraGPTAssistant(
+        st.session_state['assistant'] = AieraAssistant(
             openai_settings = openai_settings,
             db_settings = db_settings,
             aiera_settings=aiera_settings
@@ -103,7 +103,7 @@ def main():
                                 content = content.replace(annotation["text"], f" [{len(citations)}]")
                                 citations.append(f"[{len(citations)}] {annotation['quote']}")
 
-                    with st.chat_message('Aiera', avatar=f"{ROOT_DIR}/aiera_gpt/assets/favicon.ico"):
+                    with st.chat_message('Aiera', avatar=f"{ROOT_DIR}/aiera_assistant/assets/favicon.ico"):
                         st.write(content)
 
             st.session_state["citations"] = citations

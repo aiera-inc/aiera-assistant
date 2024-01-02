@@ -3,7 +3,7 @@ from typing import NewType, List, Literal
 import logging
 from pydantic_settings import BaseSettings
 
-from aiera_gpt.__init__ import ROOT_DIR
+from aiera_assistant.__init__ import ROOT_DIR
 
 class LoggingSettings(BaseSettings):
     """
@@ -86,6 +86,6 @@ db_settings = DBSettings()
 
 logging_settings = LoggingSettings()
 
-logger = logging.getLogger("aiera_gpt")
+logger = logging.getLogger("aiera_assistant")
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging_settings.level)
