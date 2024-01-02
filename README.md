@@ -24,15 +24,9 @@ conda env create -f environment.yml
 conda activate aiera-assistant
 ```
 
-### 2. Install the assistant
+### 2. Configuration
 
-```bash
-pip install -e .
-```
-
-### 3. Configuration
-
-The 
+Set up your environment using the following variables:
 
 | Environment Variable | Description                                                 |
 |----------------------|-------------------------------------------------------------|
@@ -43,13 +37,26 @@ The
 | LOGGING_LEVEL        | standard python logging level                               |
 
 
-### 4. Run the application using streamlit
+### 3. Create the assistant
+Launch Jupyter and create the assistant by executing the cells in the `AieraAssistant.ipynb` notebook. 
+
+```bash
+jupyter lab
+```
+
+Configure your environment to use the id of the assistant you've just created:
+```bash
+export OPENAI_ASSISTANT_ID={your id}
+```
+
+### 4. Install the package
+
+```bash
+pip install -e .
+```
+
+### 5. Run the application using streamlit
 
 ```bash
 streamlit run aiera_assistant/main.py
 ```
-
-
-## Known issues
-
-1. Citation generation is still a little spotty. Appears to be an issue after a couple of messages.
