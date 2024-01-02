@@ -1,8 +1,8 @@
-# Aiera GPT
+# Aiera Assistant
 
 This repository packages a basic [OpenAI Assistant](https://platform.openai.com/docs/assistants/how-it-works) chatbot for use with [Aiera's API](www.aiera.com). Aiera offers a rich dataset of financial event transciptions. Contact sales@aiera.com for more info.  
 
-The application is built with [streamlit](https://docs.streamlit.io/) and OpenAI's beta Assistants API. Aiera Assistant is a custom assistant built on the preview of gpt-4-turbo ()
+The application is built with [streamlit](https://docs.streamlit.io/) and OpenAI's beta Assistants API. Aiera Assistant is a custom assistant built on the preview of gpt4-1106-preview.
 
 
 The Aiera Assistant is able to perform:  
@@ -36,8 +36,8 @@ The
 
 | Environment Variable | Description                                                 |
 |----------------------|-------------------------------------------------------------|
-| OPENAI_API_KEY       | API key as provided by OpenAI                               |
-| OPENAI_ORG_ID        | org id as provided by OpenAI                                |
+| OPENAI_API_TOKEN     | API token provided by OpenAI                                |
+| OPENAI_ORG_ID        | org id provided by OpenAI                                   |
 | OPENAI_PERSIST_FILES | true/false, whether to persist files uploaded to OpenAI     | 
 | AIERA_API_KEY        | API key as provided by Aiera. Contact us at sales@aiera.com |
 | LOGGING_LEVEL        | standard python logging level                               |
@@ -46,7 +46,7 @@ The
 ### 4. Run the application using streamlit
 
 ```bash
-streamlit run aiera_gpt/main.py
+streamlit run aiera_assistant/main.py
 ```
 
 
