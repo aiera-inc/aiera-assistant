@@ -189,7 +189,7 @@ class AieraAssistant:
         """        
         self.client = OpenAI(
             organization = openai_settings.org_id,
-            api_key = openai_settings.api_token
+            api_key = openai_settings.api_key
         )
 
         self.assistant_id = openai_settings.assistant_id

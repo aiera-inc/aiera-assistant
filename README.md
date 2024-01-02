@@ -4,7 +4,6 @@ This repository packages a basic [OpenAI Assistant](https://platform.openai.com/
 
 The application is built with [streamlit](https://docs.streamlit.io/) and OpenAI's beta Assistants API. Aiera Assistant is a custom assistant built on the preview of gpt4-1106-preview.
 
-
 The Aiera Assistant is able to perform:  
 1. Summarization of earnings call transcripts
 2. SWOT analysis

@@ -25,7 +25,7 @@ class OpenAISettings(BaseSettings):
     A class representing OpenAI settings.
 
     Attributes:
-        api_token (str): The API token for accessing OpenAI.
+        api_key (str): The API key for accessing OpenAI.
         org_id (str): The organization ID for the user.
         persist_files (bool, optional): Whether to persist files. Defaults to True.
         try_allowance (int, optional): The number of allowed tries. Defaults to 3.
@@ -35,7 +35,7 @@ class OpenAISettings(BaseSettings):
     Configurations:
         env_prefix (str): The prefix for environment variables.
     """    
-    api_token: str
+    api_key: str
     org_id: str
     persist_files: bool = True
     try_allowance: int = 3
