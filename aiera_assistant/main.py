@@ -1,4 +1,5 @@
 import streamlit as st
+import re
 from streamlit_chat import message
 from aiera_assistant.config import openai_settings, aiera_settings, db_settings
 from aiera_assistant.assistant import AieraAssistant
@@ -95,6 +96,9 @@ def main():
 
                 else:
                     content = mess["content"]
+                    if "【" in content:
+                        content = re.sub(r'【(.*?)】', '', content)
+
                     #if mess["annotations"]:
                     #    for annotation in mess["annotations"]:
                             # check that the text starts with unicode marker
