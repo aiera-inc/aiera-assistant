@@ -1,10 +1,11 @@
-from openai import OpenAI
 import time
 import re
 from typing import List
 import json
+import os
 import tiktoken
 
+from openai import OpenAI
 from openai.types.beta.threads import ThreadMessage
 from openai.types.beta.threads.message_content_text import TextAnnotationFileCitation
 from aiera_assistant.config import AieraSettings, OpenAISettings
@@ -18,7 +19,7 @@ def verify_user(settings: AieraSettings):
     """
     Verify user settings.
 
-    Args:
+    Parameters:
         settings (AieraSettings): An object containing user settings.
 
     Returns:
@@ -72,7 +73,7 @@ class Tokenizer():
         """
         Get the total number of tokens in a list of messages.
 
-        Args:
+        Parameters:
             messages (List[dict]): A list of dictionaries representing messages.
 
         Returns:
@@ -99,7 +100,7 @@ class Tokenizer():
         """
         Tokenize the input text using the GPT-4 model.
 
-        Args:
+        Parameters:
             text (str): The input text to be tokenized.
 
         Returns:
@@ -113,7 +114,7 @@ class Tokenizer():
         Get the number of tokens in a text.
 
         Args:
-            self: The object calling the method.
+            self (object): The object calling the method.
             text (str): The input text.
 
         Returns:
@@ -164,7 +165,7 @@ class AieraAssistant:
         """
         Initialize a new instance of the class.
 
-        Args:
+        Parameters:
             openai_settings (OpenAISettings): An instance of the OpenAISettings class containing the OpenAI organization ID and API token.
             aiera_settings: The AIERA settings.
             db_settings: The database settings.
@@ -275,6 +276,21 @@ class AieraAssistant:
                 permid: str = None
                 ):
         
+        """
+        Returns a list of events based on specified parameters.
+
+        Args:
+            modified_since (str, optional): Events modified since this date (YYYY-MM-DD format).
+            bloomberg_ticker (str, optional): Events related to this Bloomberg ticker symbol.
+            event_type (str, optional): Events of this type.
+            start_date (str, optional): Events starting from this date (YYYY-MM-DD format).
+            end_date (str, optional): Events ending on this date (YYYY-MM-DD format).
+            isin (str, optional): Events related to this International Securities Identification Number.
+            permid (str, optional): Events related to this PermID.
+
+        Returns:
+            str: The content of the response in JSON format.
+        """        
         logger.debug(f"Getting events: {modified_since}, {bloomberg_ticker}, {event_type}, {start_date}, {end_date}, {isin}, {permid}")
         
         param_strings = []
@@ -302,6 +318,22 @@ class AieraAssistant:
     
     def upload_event_transcripts(self, event_ids: list):
 
+        """
+        Upload event transcripts to the server.
+
+        Args:
+            event_ids (list): A list of event IDs to upload transcripts for.
+
+        Returns:
+            list: A list of file IDs corresponding to the uploaded transcripts.
+
+        Raises:
+            None.
+
+        Notes:
+            - The function expects the self.aiera_settings.base_url and self.aiera_settings.api_key attributes to be set.
+            - The function calls the self.upload_transcript_file method to upload each transcript file.
+        """        
         logger.debug("Uploading event transcripts: %s", json.dumps(event_ids))
         
         file_ids = []
@@ -312,7 +344,7 @@ class AieraAssistant:
             
             event_data = event.json()
 
-            transcripts = [event_item["transcript"] for event_item in event_data["transcript"]]
+            transcripts = [event_item["transcript"] for event_item in event_data["transcripts"]]
             # remove transcripts items
             del event_data["transcripts"]
 
@@ -381,8 +413,6 @@ class AieraAssistant:
         """
         Get the default event transcript.
 
-        This function creates a system message and returns a list containing the transcript.
-
         Returns:
             list: The transcript, represented as a list of dictionaries.
 
@@ -406,7 +436,7 @@ class AieraAssistant:
         """
         Submit a message to the message thread.
 
-        Args:
+        Parameters:
             message_content (str): The content of the message.
 
         Raises:
@@ -425,7 +455,8 @@ class AieraAssistant:
 
     
     def process_messages(self) -> List[dict]:
-        """ Main workflow for processing messages with OpenAI endpoints.
+        """
+        Main workflow for processing messages with OpenAI endpoints.
         """
         messages = list(self.client.beta.threads.messages.list(thread_id=self.thread.id))
         logger.debug("Current messages in thread:\n%s", json.dumps([{"role": mess.role, "content": mess.content[0].text.value} for mess in messages]))
@@ -596,8 +627,6 @@ class AieraAssistant:
     def __del__(self):
         """
         Delete files uploaded to OpenAI.
-
-        This method is called when the object is being destroyed.
 
         Raises:
             None
