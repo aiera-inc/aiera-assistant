@@ -29,7 +29,7 @@ Set up your environment using the following variables:
 
 | Environment Variable | Description                                                 |
 |----------------------|-------------------------------------------------------------|
-| OPENAI_API_TOKEN     | API token provided by OpenAI                                |
+| OPENAI_API_KEY       | key provided by OpenAI                                      |
 | OPENAI_ORG_ID        | org id provided by OpenAI                                   |
 | OPENAI_PERSIST_FILES | true/false, whether to persist files uploaded to OpenAI     | 
 | AIERA_API_KEY        | API key as provided by Aiera. Contact us at sales@aiera.com |
