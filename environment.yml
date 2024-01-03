@@ -11,6 +11,7 @@ dependencies:
   - versioneer
   - pydantic-settings
   - tiktoken
+  - pip
   - pip:
     - streamlit-chat
     - openai
