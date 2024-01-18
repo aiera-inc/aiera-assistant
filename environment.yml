@@ -10,7 +10,7 @@ dependencies:
   - streamlit
   - versioneer
   - pydantic-settings
-  - tiktoken
+  - diagrams
   - pip
   - pip:
     - streamlit-chat
