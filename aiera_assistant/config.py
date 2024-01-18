@@ -46,23 +46,6 @@ class OpenAISettings(BaseSettings):
         env_prefix = "OPENAI_"
 
 
-class DBSettings(BaseSettings):
-    """
-    A class representing the database settings.
-
-    Attributes:
-        db_path (str): The path to the database file.
-
-    Config:
-        env_prefix (str): The prefix for environment variables used to override settings.
-    """    
-    db_path: str = f"{ROOT_DIR}/aiera_gpt/db/companies.db"
-
-    class Config:
-        env_prefix = "DB_"
-
-
-
 class AieraSettings(BaseSettings):
     """
     A class representing Aiera settings.
@@ -82,7 +65,6 @@ class AieraSettings(BaseSettings):
 
 openai_settings = OpenAISettings()
 aiera_settings = AieraSettings()
-db_settings = DBSettings()
 
 logging_settings = LoggingSettings()
 

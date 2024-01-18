@@ -1,7 +1,7 @@
 import streamlit as st
 import re
 from streamlit_chat import message
-from aiera_assistant.config import openai_settings, aiera_settings, db_settings
+from aiera_assistant.config import openai_settings, aiera_settings
 from aiera_assistant.assistant import AieraAssistant
 from aiera_assistant.__init__ import ROOT_DIR
 
@@ -19,8 +19,7 @@ def main():
     if 'assistant' not in st.session_state:
         st.session_state['assistant'] = AieraAssistant(
             openai_settings = openai_settings,
-            aiera_settings=aiera_settings,
-            db_settings=db_settings
+            aiera_settings=aiera_settings
 
         )
 
@@ -73,7 +72,6 @@ def main():
                     with st.chat_message('Aiera', avatar=f"{ROOT_DIR}/aiera_assistant/assets/aiera-icon-logo-circle.png"):
                         st.write(content)
 
-            st.session_state["citations"] = citations
 
 
 if __name__ == "__main__":
