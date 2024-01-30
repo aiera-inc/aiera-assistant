@@ -1,14 +1,8 @@
 # Aiera Assistant
 
-This repository packages a basic [OpenAI Assistant](https://platform.openai.com/docs/assistants/how-it-works) chatbot for use with [Aiera's API](www.aiera.com). Aiera offers a rich dataset of financial event transciptions. Contact sales@aiera.com for more info.  
+This repository packages a basic [OpenAI Assistant](https://platform.openai.com/docs/assistants/how-it-works) conversational chat for use with [Aiera's API](www.aiera.com). Contact sales@aiera.com for more info.  
 
-The application is built with [streamlit](https://docs.streamlit.io/) and OpenAI's beta Assistants API. Aiera Assistant is a custom assistant built on the preview of gpt4-1106-preview.
-
-The Aiera Assistant is able to perform:  
-1. Summarization of earnings call transcripts
-2. SWOT analysis
-3. KPI extraction
-4. Comparisons of KPIs and important metrics across financial earnings calls events
+The application is built with [streamlit](https://docs.streamlit.io/) and OpenAI's beta Assistants API. Aiera Assistant is a custom assistant built on the preview of gpt4-turbo-preview.
 
 ![image](docs/assistant_snapshot.png)
 
