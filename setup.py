@@ -5,7 +5,7 @@ import versioneer
 cur_dir = path.abspath(path.dirname(__file__))
 
 setup(
-    name="aiera-gpt",
+    name="aiera-assistant",
     description="Aiera Chat Engine",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
