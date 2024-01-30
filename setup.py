@@ -11,5 +11,5 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     packages=find_packages(exclude=["bin", "sandbox"]),
     include_package_data=True,
-    python_requires=">=3.9",
+    python_requires=">=3.10",
 )
