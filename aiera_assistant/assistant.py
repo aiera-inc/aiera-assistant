@@ -242,6 +242,7 @@ class AieraAssistant:
         Main workflow for processing messages with OpenAI endpoints.
         """
         messages = list(self.client.beta.threads.messages.list(thread_id=self.thread.id))
+        print(messages)
         logger.debug("Current messages in thread:\n%s", json.dumps([{"role": mess.role, "content": mess.content[0].text.value} for mess in messages]))
 
 
@@ -298,11 +299,10 @@ class AieraAssistant:
                     self.client.beta.threads.messages.create(
                         thread_id = self.thread.id,
                         role = "user",
-                        content = "",
+                        content = "Files uploaded.",
                         file_ids = file_ids
                     )
                 
-            
                     return self.process_messages()
 
         if run.status == "completed":
